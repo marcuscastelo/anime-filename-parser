@@ -1,35 +1,36 @@
-use derive_builder::Builder;
-use derive_getters::Getters;
 use derive_more::Constructor;
+use typed_builder::TypedBuilder;
 
-#[derive(Debug, Clone, Constructor)]
+#[derive(Debug, Clone, TypedBuilder)]
 pub struct PreMetadata {
-    filename: String,
-    submitter: Option<String>,
+    pub filename: String,
+    pub submitter: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+impl PreMetadata {
+    pub fn new() -> PreMetadataBuilder<((), ())> {
+        PreMetadata::builder()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum EpisodeSpec {
     Single(u32),
     Range { start: u32, end: u32 },
     Unspecified,
 }
 
-#[derive(Debug, Clone, Builder, Getters)]
+#[derive(Debug, Clone, TypedBuilder)]
 pub struct Metadata {
-    filename: String,
-    submitter: Option<String>,
-    title: String,
-    episode: EpisodeSpec,
+    pub filename: String,
+    pub submitter: Option<String>,
+    pub title: String,
+    pub episode: EpisodeSpec,
 }
 
 impl Metadata {
-    pub fn new(pre_metadata: PreMetadata) -> MetadataBuilder {
-        let mut builder = MetadataBuilder::default();
-        builder
-            .filename(pre_metadata.filename)
-            .submitter(pre_metadata.submitter);
-        builder
+    pub fn new() -> MetadataBuilder<((), (), (), ())> {
+        Metadata::builder()
     }
 }
 
@@ -38,34 +39,28 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_filename_keep_filename() {
-        let filename = "test";
-        let mut metadata_builder = Metadata::new(PreMetadata {
-            filename: filename.to_string(),
-            submitter: None,
-        });
+    fn test_pre_metadata() {
+        let pre_metadata = PreMetadata::new()
+            .filename("test.mp4".to_string())
+            .submitter(Some("test".to_string()))
+            .build();
 
-        let metadata = metadata_builder
-            .title("test".to_string())
-            .episode(EpisodeSpec::Unspecified)
-            .build()
-            .unwrap();
-        assert_eq!(metadata.filename, filename);
+        assert_eq!(pre_metadata.filename, "test.mp4");
+        assert_eq!(pre_metadata.submitter, Some("test".to_string()));
     }
 
     #[test]
-    fn test_parse_filename_submitter_is_correct() {
-        let filename = "[test] test";
-        let mut metadata_builder = Metadata::new(PreMetadata {
-            filename: filename.to_string(),
-            submitter: Some("test".to_string()),
-        });
-
-        let metadata = metadata_builder
+    fn test_metadata() {
+        let metadata = Metadata::new()
+            .filename("test.mp4".to_string())
+            .submitter(Some("test".to_string()))
             .title("test".to_string())
-            .episode(EpisodeSpec::Unspecified)
-            .build()
-            .unwrap();
-        assert_eq!(metadata.filename, filename);
+            .episode(EpisodeSpec::Single(1))
+            .build();
+
+        assert_eq!(metadata.filename, "test.mp4");
+        assert_eq!(metadata.submitter, Some("test".to_owned()));
+        assert_eq!(metadata.title, "test");
+        assert_eq!(metadata.episode, EpisodeSpec::Single(1));
     }
 }

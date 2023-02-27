@@ -17,11 +17,12 @@ impl Display for PreParseError {
 impl Error for PreParseError {}
 
 impl PreParser {
-    pub fn parse_filename(filename: &str) -> Result<PreMetadata, PreParseError> {
-        Ok(PreMetadata::new(
-            filename.to_owned(),
-            PreParser::get_submitter(filename)?,
-        ))
+    pub fn parse_filename(filename: String) -> Result<PreMetadata, PreParseError> {
+        let submitter = PreParser::get_submitter(filename.as_str())?;
+        Ok(PreMetadata::builder()
+            .filename(filename)
+            .submitter(submitter)
+            .build())
     }
 
     pub fn get_submitter(filename: &str) -> Result<Option<String>, PreParseError> {
