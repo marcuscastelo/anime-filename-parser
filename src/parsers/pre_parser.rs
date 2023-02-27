@@ -1,4 +1,3 @@
-use error_stack::{IntoReport, Report, Result, ResultExt};
 use std::{error::Error, fmt::Display};
 
 use crate::metadata::PreMetadata;
@@ -16,35 +15,24 @@ impl Display for PreParseError {
 
 impl Error for PreParseError {}
 
+lazy_static::lazy_static! {
+    static ref SUBMITTER_REGEX: regex::Regex = regex::Regex::new(r#"\[(?P<submitter>[^\]]+)\]"#).unwrap();
+}
+
 impl PreParser {
-    pub fn parse_filename(filename: String) -> Result<PreMetadata, PreParseError> {
-        let submitter = PreParser::get_submitter(filename.as_str())?;
-        Ok(PreMetadata::builder()
+    pub fn parse_filename(filename: String) -> PreMetadata {
+        let submitter = PreParser::get_submitter(filename.as_str()).map(String::from);
+
+        PreMetadata::builder()
             .filename(filename)
             .submitter(submitter)
-            .build())
+            .build()
     }
 
-    pub fn get_submitter(filename: &str) -> Result<Option<String>, PreParseError> {
-        const SUBMITTER_REGEX: &str = r"^\[([^]]+)\]|\[([^\]]+)\]";
-
-        let re = regex::Regex::new(SUBMITTER_REGEX)
-            .into_report()
-            .attach(format!("Failed to compile regex: {}", SUBMITTER_REGEX))
-            .change_context(PreParseError)?;
-
-        let caps = match re.captures(filename) {
-            Some(caps) => caps,
-            None => return Ok(None),
-        };
-
-        let submitter = caps.get(1).or_else(|| caps.get(2)).ok_or(
-            Report::new(PreParseError)
-                .attach_printable(format!("This should never happen. None of the regex groups participated in the match. Filename: {}", filename)),
-        )?;
-
-        let submitter = submitter.as_str();
-        Ok(Some(submitter.to_string()))
+    pub fn get_submitter(filename: &str) -> Option<&str> {
+        let caps = SUBMITTER_REGEX.captures(filename)?;
+        let submitter = caps.name("submitter")?.as_str();
+        Some(submitter)
     }
 }
 
@@ -53,18 +41,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_submitter() -> Result<(), PreParseError> {
-        let filename = "[test] test";
-        let submitter = PreParser::get_submitter(filename)?;
-        assert_eq!(submitter, Some("test".to_string()));
-        Ok(())
+    fn test_get_submitter() {
+        let filename = "[test] asdf";
+        let submitter = PreParser::get_submitter(filename);
+        assert_eq!(submitter, Some("test"));
     }
 
     #[test]
-    fn test_get_submitter_no_submitter() -> Result<(), PreParseError> {
+    fn test_get_submitter_no_submitter() {
         let filename = "test";
-        let submitter = PreParser::get_submitter(filename)?;
+        let submitter = PreParser::get_submitter(filename);
         assert_eq!(submitter, None);
-        Ok(())
     }
 }

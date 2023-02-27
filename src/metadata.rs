@@ -7,31 +7,25 @@ pub struct PreMetadata {
     pub submitter: Option<String>,
 }
 
-impl PreMetadata {
-    pub fn new() -> PreMetadataBuilder<((), ())> {
-        PreMetadata::builder()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum EpisodeSpec {
     Single(u32),
-    Range { start: u32, end: u32 },
+
+    Range {
+        start: u32,
+        end: u32,
+    },
+
+    #[default]
     Unspecified,
 }
 
-#[derive(Debug, Clone, TypedBuilder)]
+#[derive(Debug, Clone, TypedBuilder, Default)]
 pub struct Metadata {
     pub filename: String,
     pub submitter: Option<String>,
     pub title: String,
     pub episode: EpisodeSpec,
-}
-
-impl Metadata {
-    pub fn new() -> MetadataBuilder<((), (), (), ())> {
-        Metadata::builder()
-    }
 }
 
 #[cfg(test)]
@@ -40,9 +34,9 @@ mod tests {
 
     #[test]
     fn test_pre_metadata() {
-        let pre_metadata = PreMetadata::new()
+        let pre_metadata = PreMetadata::builder()
             .filename("test.mp4".to_string())
-            .submitter(Some("test".to_string()))
+            .submitter("test".to_string().into())
             .build();
 
         assert_eq!(pre_metadata.filename, "test.mp4");
@@ -51,9 +45,9 @@ mod tests {
 
     #[test]
     fn test_metadata() {
-        let metadata = Metadata::new()
+        let metadata = Metadata::builder()
             .filename("test.mp4".to_string())
-            .submitter(Some("test".to_string()))
+            .submitter("test".to_string().into())
             .title("test".to_string())
             .episode(EpisodeSpec::Single(1))
             .build();
