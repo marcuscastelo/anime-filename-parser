@@ -7,35 +7,33 @@ use crate::metadata::Metadata;
 use error_stack::{IntoReport, Report, Result, ResultExt};
 use metadata::PreMetadata;
 use parsers::pre_parser::PreParser;
+use parsers::proxy_parser::ProxyParser;
 use std::error::Error;
 use std::fmt::{self, Display};
 
 #[derive(Debug)]
-pub struct ParseError;
+pub enum ParseError {
+    PreParser,
+    ProxyParser,
+}
 
 impl Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Error parsing filename")
+        match self {
+            ParseError::PreParser => write!(f, "Error pre-parsing filename"),
+            ParseError::ProxyParser => write!(f, "Error parsing filename"),
+        }
     }
 }
 
 impl Error for ParseError {}
 
 pub fn parse_filename(filename: String) -> Result<Metadata, ParseError> {
-    let pre_metadata = PreParser::parse_filename(filename);
-
-    let metadata = match pre_metadata {
-        PreMetadata {
-            filename,
-            submitter,
-        } => Metadata::builder()
-            .filename(filename)
-            .submitter(submitter)
-            .title("aaaa".to_owned())
-            .episode(metadata::EpisodeSpec::Single(1))
-            .build(),
-    };
-
+    let pre_metadata = PreParser::parse_filename(filename.clone());
+    let metadata = ProxyParser
+        .parse_filename(pre_metadata)
+        .change_context(ParseError::ProxyParser)
+        .attach_printable_lazy(|| format!("Error parsing filename: {}", filename))?;
     Ok(metadata)
 }
 

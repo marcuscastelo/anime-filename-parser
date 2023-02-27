@@ -26,6 +26,15 @@ pub struct Metadata {
     pub submitter: Option<String>,
     pub title: String,
     pub episode: EpisodeSpec,
+
+    #[builder(default = Option::None)]
+    pub quality: Option<String>, //TODO: Make this an enum
+
+    #[builder(default = Option::None)]
+    pub version: Option<String>,
+
+    #[builder(default = Option::None)]
+    pub extension: Option<String>,
 }
 
 #[cfg(test)]
